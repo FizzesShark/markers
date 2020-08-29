@@ -15,4 +15,7 @@ This project is currently in its earliest stages of development.
 
 - [ ] Create a user registration page with basic features - username, password, type of account
 - [ ] Store said users using MongoDB, and hash passwords using SHA-256
-- [ ] Add browser-wide authentication using cookies
+- [ ] Add site-wide authentication using cookies
+- [ ] Create a "posts" document in MongoDB, with various fields (subtasks needed)
+- [ ] Create an "assignments" document in MongoDB (same as above)
+- [ ] Give students the ability to create posts, and teachers both posts and assignments
