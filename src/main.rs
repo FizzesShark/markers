@@ -5,6 +5,7 @@
 mod login;
 mod db;
 mod test_db;
+mod hash;
 
 use rocket_contrib::serve::StaticFiles;
 
