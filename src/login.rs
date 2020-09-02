@@ -2,14 +2,15 @@ use rocket::request::{self, Form, Request, FromRequest};
 use rocket::response::Redirect;
 use rocket::http::{Cookie, Cookies, Status};
 use rocket::Outcome;
-
 use rocket_contrib::templates::Template;
 
 use std::collections::HashMap;
 
+use crate::db;
+
 #[derive(FromForm)]
 struct LoginAttempt {
-	username: String,
+	email: String,
 	password: String,
 }
 
@@ -21,7 +22,7 @@ fn main() -> Template {
 
 #[post("/login", data = "<login_attempt>")]
 fn login(mut cookies: Cookies, login_attempt: Form<LoginAttempt>) -> Redirect {
-	let user = &login_attempt.username;
+	let user = &login_attempt.email;
 	let pass = &login_attempt.password;
 
 	if let Some(id) = validate_login(user, pass) {
@@ -31,8 +32,21 @@ fn login(mut cookies: Cookies, login_attempt: Form<LoginAttempt>) -> Redirect {
 	Redirect::to("/admin")
 }
 
-fn validate_login(user: &str, pass: &str) -> Option<String> {
+fn validate_login(email: &str, pass: &str) -> Option<String> {
 	Some(String::from("admin"))
+}
+
+#[derive(FromForm)]
+struct NewUser {
+	email: String,
+	password: String,
+	#[form(field = "type")]
+	user_type: String,
+}
+
+#[post("/register", data="<new_user>")]
+fn register_new_user(new_user: Form<NewUser>) {
+	
 }
 
 struct User(String);

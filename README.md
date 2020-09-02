@@ -1,4 +1,4 @@
-# Markers
+# 🖋️ Markers
 
 Markers is an online platform designed to serve as a one-stop-shop for online course discussions, announcements and submissions.
 Inspired by me and my classmates' troubles with various other online services, this hopes to offer possibilities to improve upon existing features.
