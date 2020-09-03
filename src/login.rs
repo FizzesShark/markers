@@ -6,7 +6,7 @@ use rocket_contrib::templates::Template;
 
 use std::collections::HashMap;
 
-use crate::db;
+use crate::db::{self, LoginError};
 
 #[derive(FromForm)]
 struct LoginAttempt {
@@ -14,8 +14,8 @@ struct LoginAttempt {
 	password: String,
 }
 
-#[get("/main")]
-fn main() -> Template {
+#[get("/main?<error>")]
+fn main(error: Option<String>) -> Template {
 	let mut context: HashMap<String, String> = HashMap::new();
 	Template::render("login", &context)
 }
@@ -25,15 +25,14 @@ fn login(mut cookies: Cookies, login_attempt: Form<LoginAttempt>) -> Redirect {
 	let user = &login_attempt.email;
 	let pass = &login_attempt.password;
 
-	if let Some(id) = validate_login(user, pass) {
-		cookies.add_private(Cookie::new("id", id));
+	match db::validate_user(user, pass) {
+		Ok(()) => {
+			cookies.add_private(Cookie::new("id", "admin"));
+			Redirect::to("/admin")
+		},
+		Err(LoginError::NoSuchEmail) => Redirect::to(uri!(main: "No such email")),
+		Err(LoginError::WrongPassword) => Redirect::to(uri!(main: "Wrong password")),
 	}
-
-	Redirect::to("/admin")
-}
-
-fn validate_login(email: &str, pass: &str) -> Option<String> {
-	Some(String::from("admin"))
 }
 
 #[derive(FromForm)]

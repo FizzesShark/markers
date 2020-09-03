@@ -1,22 +1,16 @@
-use mongodb::sync::{Client, Collection};
+use mongodb::sync::{Client, Database, Collection};
 use mongodb::bson::{bson, doc};
 
-const MONGODB_URI: &str = "mongodb://172.27.16.1:27017";
+use crate::hash::hash;
 
-fn get_users() -> Collection {
-	Client::with_uri_str(MONGODB_URI).unwrap().database("markers").collection("users")
-}
+use dotenv;
 
-fn get_posts() -> Collection {
-	Client::with_uri_str(MONGODB_URI).unwrap().database("markers").collection("posts")
-}
-
-fn get_test() -> Collection {
-	Client::with_uri_str(MONGODB_URI).unwrap().database("markers").collection("test")
+fn get_database() -> Database {
+	Client::with_uri_str(&dotenv::var("MONGODB_URI").unwrap()).unwrap().database("markers")
 }
 
 pub fn add_user(email: &str, password: &str, user_type: &str) {
-	let users = get_users();
+	let users = get_database().collection("users");
 
 	let user = doc! { "email": email };
 
@@ -25,33 +19,27 @@ pub fn add_user(email: &str, password: &str, user_type: &str) {
 	} else {
 		users.insert_one(doc! {
 			"email": email,
-			"password": password,
+			"password": hash(password),
 			"type": user_type,
 		}, None).unwrap();
 	}
 }
 
-pub fn test_add(id: &str, note: &str) -> Result<(), String> {
-	let collection = get_test();
-
-	let unique = doc! { "id": id };
-
-	if collection.count_documents(unique, None).unwrap() > 0 {
-		Err(String::from("ID already exists"))
-	} else {
-		collection.insert_one(doc! {
-			"id": id,
-			"note": note,
-		}, None).unwrap();
-		Ok(())
-	}
+pub enum LoginError {
+	WrongPassword,
+	NoSuchEmail,
 }
 
-pub fn test_get(id: &str) -> Option<String> {
-	let collection = get_test();
+pub fn validate_user(email: &str, password: &str) -> Result<(), LoginError> {
+	let users = get_database().collection("users");
 
-	match collection.find_one(doc! { "id": id }, None).unwrap() {
-		Some(doc) => Some(doc.get("note").unwrap().to_string()),
-		None => None,
+	if let Some(user) = users.find_one(doc! { "email": email }, None).unwrap() {
+		if hash(password) == user.get_str("password").unwrap() {
+			Ok(())
+		} else {
+			Err(LoginError::WrongPassword)
+		}
+	} else {
+		Err(LoginError::NoSuchEmail)
 	}
 }

@@ -4,11 +4,13 @@
 
 mod login;
 mod db;
-mod test_db;
 mod hash;
 
 use rocket_contrib::serve::StaticFiles;
 
+use dotenv::dotenv;
+
 fn main() {
-	test_db::mount_tests(login::start_server().mount("/static", StaticFiles::from("static"))).launch();
+	dotenv().ok();
+	login::start_server().mount("/static", StaticFiles::from("static")).launch();
 }
