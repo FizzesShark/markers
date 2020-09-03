@@ -12,5 +12,11 @@ use dotenv::dotenv;
 
 fn main() {
 	dotenv().ok();
+
+	for (key, value) in std::env::vars() {
+		println!("{} {}", key, value);
+	}
+
+	
 	login::start_server().mount("/static", StaticFiles::from("static")).launch();
 }

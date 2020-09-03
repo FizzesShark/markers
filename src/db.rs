@@ -9,19 +9,24 @@ fn get_database() -> Database {
 	Client::with_uri_str(&dotenv::var("MONGODB_URI").unwrap()).unwrap().database("markers")
 }
 
-pub fn add_user(email: &str, password: &str, user_type: &str) {
+pub enum AccountError {
+	DuplicateEmail,
+}
+
+pub fn add_user(email: &str, password: &str, user_type: &str) -> Result<(), AccountError>{
 	let users = get_database().collection("users");
 
 	let user = doc! { "email": email };
 
 	if users.count_documents(user, None).unwrap() > 0 {
-
+		Err(AccountError::DuplicateEmail)
 	} else {
 		users.insert_one(doc! {
 			"email": email,
 			"password": hash(password),
 			"type": user_type,
 		}, None).unwrap();
+		Ok(())
 	}
 }
 

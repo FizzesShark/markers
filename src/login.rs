@@ -6,7 +6,7 @@ use rocket_contrib::templates::Template;
 
 use std::collections::HashMap;
 
-use crate::db::{self, LoginError};
+use crate::db::{self, LoginError, AccountError};
 
 #[derive(FromForm)]
 struct LoginAttempt {
@@ -28,10 +28,10 @@ fn login(mut cookies: Cookies, login_attempt: Form<LoginAttempt>) -> Redirect {
 	match db::validate_user(user, pass) {
 		Ok(()) => {
 			cookies.add_private(Cookie::new("id", "admin"));
-			Redirect::to("/admin")
+			Redirect::to(uri!(admin))
 		},
-		Err(LoginError::NoSuchEmail) => Redirect::to(uri!(main: "No such email")),
-		Err(LoginError::WrongPassword) => Redirect::to(uri!(main: "Wrong password")),
+		Err(LoginError::NoSuchEmail) => Redirect::to(uri!(main: "No such email".to_string())),
+		Err(LoginError::WrongPassword) => Redirect::to(uri!(main: "Wrong password".to_string())),
 	}
 }
 
@@ -43,9 +43,13 @@ struct NewUser {
 	user_type: String,
 }
 
+//TODO:
 #[post("/register", data="<new_user>")]
-fn register_new_user(new_user: Form<NewUser>) {
-	
+fn register_new_user(new_user: Form<NewUser>) -> &'static str {
+	match db::add_user(&new_user.email, &new_user.password, &new_user.user_type) {
+		Ok(_) => "Account successfully registered!",
+		Err(AccountError::DuplicateEmail) => "An account with that email already exists.",
+	}
 }
 
 struct User(String);
@@ -72,11 +76,11 @@ fn admin(user: User) -> &'static str {
 
 #[get("/admin", rank = 2)]
 fn admin_redirect() -> Redirect {
-	Redirect::to(uri!(main))
+	Redirect::to("/main")
 }
 
 pub fn start_server() -> rocket::Rocket {
 	rocket::ignite()
-		.mount("/", rocket::routes![login, main, admin, admin_redirect])
+		.mount("/", rocket::routes![login, main, admin, admin_redirect, register_new_user])
 		.attach(Template::fairing())
 }
