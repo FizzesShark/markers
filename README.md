@@ -13,9 +13,10 @@ This project is currently in its earliest stages of development.
   
 ## Roadmap
 
-- [ ] Create a user registration page with basic features - username, password, type of account
-- [ ] Store said users using MongoDB, and hash passwords using SHA-256
-- [ ] Add site-wide authentication using cookies
+- [x] Create a user registration page with basic features - username, password, type of account
+- [x] Store said users using MongoDB, and hash passwords using ~~SHA-256~~ argon2
+- [x] Add site-wide authentication using cookies
+- [ ] Add more functionality to said cookies - auto-cleared after inactivity, clear from database as well, etc.
 - [ ] Create a "posts" document in MongoDB, with various fields (subtasks needed)
 - [ ] Create an "assignments" document in MongoDB (same as above)
 - [ ] Give students the ability to create posts, and teachers both posts and assignments
