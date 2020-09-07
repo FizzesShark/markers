@@ -16,6 +16,7 @@ This project is currently in its earliest stages of development.
 - [x] Create a user registration page with basic features - username, password, type of account
 - [x] Store said users using MongoDB, and hash passwords using ~~SHA-256~~ argon2
 - [x] Add site-wide authentication using cookies
+- [ ] Let teachers create classes, and let students register for said classes (public, private, access codes)
 - [ ] Add more functionality to said cookies - auto-cleared after inactivity, clear from database as well, etc.
 - [ ] Create a "posts" document in MongoDB, with various fields (subtasks needed)
 - [ ] Create an "assignments" document in MongoDB (same as above)

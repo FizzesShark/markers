@@ -56,20 +56,28 @@ impl<'a, 'r> FromRequest<'a, 'r> for User {
 
     fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
         match db::validate_login(request.cookies().get("id").unwrap().value()) {
-			Ok(user) => Outcome::Success(user),
-			Err(()) => Outcome::Forward(()),
-		}
+            Ok(user) => Outcome::Success(user),
+            Err(()) => Outcome::Forward(()),
+        }
     }
 }
 
 #[get("/default")]
 fn default(user: User) -> String {
-    format!("Hi {}, your account type is {}", &user.email, &user.user_type)
+    format!(
+        "Hi {}, your account type is {}",
+        &user.email, &user.user_type
+    )
 }
 
 #[get("/default", rank = 2)]
 fn default_redirect() -> Redirect {
     Redirect::to("/main")
+}
+
+#[put("/new_class?<class_type>&<class_name>")]
+fn new_class(class_type: String, class_name: String) {
+	
 }
 
 pub fn start_server() -> rocket::Rocket {
