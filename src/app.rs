@@ -1,9 +1,9 @@
 use rocket::http::{Cookie, Cookies, Status};
 use rocket::request::{self, Form, FromRequest, Request};
-use rocket::response::Redirect;
+use rocket::response::{content, Redirect};
 use rocket::Outcome;
-use rocket_contrib::templates::Template;
 use rocket_contrib::json::Json;
+use rocket_contrib::templates::Template;
 
 use std::collections::HashMap;
 
@@ -14,13 +14,19 @@ struct LoginAttempt {
     email: String,
     password: String,
 }
-
+/*
 type LoginStatus = Result<User, ()>;
 
 #[derive(Responder)]
 enum AuthenResponse {
-	String(String),
-	Redirect(Redirect),
+    String(String),
+    Redirect(Redirect),
+}
+*/
+
+//TODO: make cookie constructor
+fn custom_build_cookie() -> Cookie<'static> {
+	unimplemented!();
 }
 
 #[get("/main?<error>")]
@@ -37,7 +43,7 @@ fn login(mut cookies: Cookies, login_attempt: Form<LoginAttempt>) -> Redirect {
     match validate_user(user, pass) {
         Ok(()) => {
             cookies.add(Cookie::new("id", generate_session(user)));
-            Redirect::to(uri!(default))
+            Redirect::to("/test_loggedin")
         }
         Err(LoginError::NoSuchEmail) => Redirect::to(uri!(main: "No such email".to_string())),
         Err(LoginError::WrongPassword) => Redirect::to(uri!(main: "Wrong password".to_string())),
@@ -46,12 +52,12 @@ fn login(mut cookies: Cookies, login_attempt: Form<LoginAttempt>) -> Redirect {
 
 #[post("/logout")]
 fn logout(mut cookies: Cookies) -> Redirect {
-	if let Some(sess_id) = cookies.get("id") {
-		delete_session(sess_id.value());
-		cookies.remove(Cookie::named("id"));
-	}
-	
-	Redirect::to("/main")
+    if let Some(sess_id) = cookies.get("id") {
+        delete_session(sess_id.value());
+        cookies.remove(Cookie::named("id"));
+    }
+
+    Redirect::to("/main")
 }
 
 #[derive(FromForm)]
@@ -74,54 +80,68 @@ impl<'a, 'r> FromRequest<'a, 'r> for User {
     type Error = ();
 
     fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
-		match request.cookies().get("id") {
-			Some(cookie_id) => {
-				match validate_login(cookie_id.value()) {
-					Ok(user) => Outcome::Success(user),
-					Err(()) => Outcome::Failure((Status::Forbidden, ())),
-				}
-			},
-			None => Outcome::Failure((Status::Forbidden, ())),
-		}
+        match request.cookies().get("id") {
+            Some(cookie_id) => match validate_login(cookie_id.value()) {
+                Ok(user) => Outcome::Success(user),
+                Err(()) => Outcome::Failure((Status::Forbidden, ())),
+            },
+            None => Outcome::Failure((Status::Forbidden, ())),
+        }
     }
 }
 
-#[get("/default")]
-fn default(user: User) -> String {
-	format!(
-		"Hi {}, your account type is {}",
-		&user.email, &user.user_type
-	)
+#[get("/test_loggedin")]
+fn test_loggedin(user: User) -> String {
+    format!(
+        "Hi {}, your account type is {}",
+        &user.email, &user.user_type
+    )
 }
 
 #[put("/new_class?<class_type>&<class_name>")]
 fn new_class(user: User, class_type: String, class_name: String) -> Result<Json<Class>, Status> {
-	let c_type = match class_type.as_str() {
-		"open" => ClassType::Open,
-		"inviteonly" => ClassType::InviteOnly,
-		"closed" => ClassType::Closed,
-		&_ => ClassType::Open,
-	};
+    let c_type = match class_type.as_str() {
+        "open" => ClassType::Open,
+        "inviteonly" => ClassType::InviteOnly,
+        "closed" => ClassType::Closed,
+        &_ => ClassType::Open,
+    };
 
-	match create_class(user, &class_name, c_type) {
-		Ok(class) => Ok(Json(class)),
-		Err(()) => Err(Status::BadRequest)
+    match create_class(user, &class_name, c_type) {
+        Ok(class) => Ok(Json(class)),
+        Err(()) => Err(Status::BadRequest),
+    }
+}
+
+#[put("/add_student?<class_name>&<student_email>")]
+fn add_student(user: User, class_name: String, student_email: String) -> String {
+	match class_add_student(user, &class_name, &student_email) {
+		Ok(()) => "Student successfully added".to_string(),
+		Err(()) => "Some error occurred".to_string(),
 	}
 }
 
 #[catch(403)]
-fn redirect_to_login() -> Redirect {
-	Redirect::to("/main")
+fn redirect_to_login(req: &Request) -> content::Html<String> {
+    content::Html(format!(
+        "<h1>403 Forbidden</h1><p>Try logging in at <a href=\"/main\">login</a>"
+    ))
 }
 
 pub fn start_server() -> rocket::Rocket {
     rocket::ignite()
         .mount(
             "/",
-            rocket::routes![login, logout, main, default, register_new_user, new_class],
-		)
-		.register(
-			rocket::catchers![redirect_to_login]
-		)
+            rocket::routes![
+                login,
+                logout,
+                main,
+                test_loggedin,
+                register_new_user,
+				new_class,
+				add_student,
+            ],
+        )
+        .register(rocket::catchers![redirect_to_login])
         .attach(Template::fairing())
 }

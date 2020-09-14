@@ -3,9 +3,9 @@
 #[macro_use]
 extern crate rocket;
 
+mod app;
 mod db;
 mod hash;
-mod app;
 
 use rocket_contrib::serve::StaticFiles;
 

@@ -20,8 +20,8 @@ pub struct Class {
     pub class_type: ClassType,
     pub name: String,
     pub teacher: String,
-	pub assignments: Vec<Assignment>,
-	pub students: Vec<User>,
+    pub assignments: Vec<Assignment>,
+    pub students: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -33,9 +33,9 @@ pub enum ClassType {
 
 #[derive(Serialize, Deserialize)]
 pub struct Assignment {
-	pub name: String,
-	pub total_marks: usize,
-	pub description: String,
+    pub name: String,
+    pub total_marks: usize,
+    pub description: String,
 }
 
 fn get_database() -> Database {
@@ -115,9 +115,11 @@ pub fn generate_session(email: &str) -> String {
 }
 
 pub fn delete_session(sess_id: &str) {
-	let sessions = get_database().collection("sessions");
+    let sessions = get_database().collection("sessions");
 
-	sessions.find_one_and_delete(doc! { "id": sess_id }, None);
+    sessions
+        .find_one_and_delete(doc! { "id": sess_id }, None)
+        .unwrap();
 }
 
 pub fn validate_login(id: &str) -> Result<User, ()> {
@@ -151,8 +153,8 @@ pub fn create_class(user: User, class_name: &str, class_type: ClassType) -> Resu
             class_type,
             name: class_name.to_string(),
             teacher: user.email,
-			assignments: vec![],
-			students: vec![],
+            assignments: vec![],
+            students: vec![],
         };
 
         let classes = get_database().collection("classes");
@@ -181,3 +183,25 @@ pub fn create_class(user: User, class_name: &str, class_type: ClassType) -> Resu
         }
     }
 }
+
+pub fn class_add_student(user: User, class_name: &str, student_email: &str) -> Result<(), ()> {
+	if &user.user_type != "teacher" {
+		Err(())
+	} else {
+		let classes = get_database().collection("classes");
+
+		let filter = doc! {
+			"name": class_name,
+			"teacher": user.email,
+		};
+		let update = doc! {
+			"$push": { "students": student_email }
+		};
+
+		match classes.find_one_and_update(filter, update, None) {
+			Ok(_) => Ok(()),
+			_ => Err(())
+		}
+	}
+}
+
