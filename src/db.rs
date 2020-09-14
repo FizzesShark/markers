@@ -20,7 +20,8 @@ pub struct Class {
     pub class_type: ClassType,
     pub name: String,
     pub teacher: String,
-    pub assignments: Vec<Assignment>,
+	pub assignments: Vec<Assignment>,
+	pub students: Vec<User>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -32,7 +33,9 @@ pub enum ClassType {
 
 #[derive(Serialize, Deserialize)]
 pub struct Assignment {
-    pub name: String,
+	pub name: String,
+	pub total_marks: usize,
+	pub description: String,
 }
 
 fn get_database() -> Database {
@@ -111,6 +114,12 @@ pub fn generate_session(email: &str) -> String {
     id
 }
 
+pub fn delete_session(sess_id: &str) {
+	let sessions = get_database().collection("sessions");
+
+	sessions.find_one_and_delete(doc! { "id": sess_id }, None);
+}
+
 pub fn validate_login(id: &str) -> Result<User, ()> {
     let sessions = get_database().collection("sessions");
     let users = get_database().collection("users");
@@ -142,7 +151,8 @@ pub fn create_class(user: User, class_name: &str, class_type: ClassType) -> Resu
             class_type,
             name: class_name.to_string(),
             teacher: user.email,
-            assignments: vec![],
+			assignments: vec![],
+			students: vec![],
         };
 
         let classes = get_database().collection("classes");
