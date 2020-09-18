@@ -26,7 +26,8 @@ enum AuthenResponse {
 
 //TODO: make cookie constructor
 fn custom_build_cookie() -> Cookie<'static> {
-	unimplemented!();
+    //Domain must be the same
+    unimplemented!();
 }
 
 #[get("/main?<error>")]
@@ -115,10 +116,10 @@ fn new_class(user: User, class_type: String, class_name: String) -> Result<Json<
 
 #[put("/add_student?<class_name>&<student_email>")]
 fn add_student(user: User, class_name: String, student_email: String) -> String {
-	match class_add_student(user, &class_name, &student_email) {
-		Ok(()) => "Student successfully added".to_string(),
-		Err(()) => "Some error occurred".to_string(),
-	}
+    match class_add_student(user, &class_name, &student_email) {
+        Ok(()) => "Student successfully added".to_string(),
+        Err(()) => "Some error occurred".to_string(),
+    }
 }
 
 #[catch(403)]
@@ -138,8 +139,8 @@ pub fn start_server() -> rocket::Rocket {
                 main,
                 test_loggedin,
                 register_new_user,
-				new_class,
-				add_student,
+                new_class,
+                add_student,
             ],
         )
         .register(rocket::catchers![redirect_to_login])

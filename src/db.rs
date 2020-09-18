@@ -13,6 +13,8 @@ pub struct User {
     pub email: String,
     pub password: String,
     pub user_type: String,
+    pub taught_classes: Option<Vec<Class>>,
+    pub classes: Vec<Class>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -135,7 +137,15 @@ pub fn validate_login(id: &str) -> Result<User, ()> {
             Ok(User {
                 email: user.get_str("email").unwrap().to_string(),
                 password: user.get_str("password").unwrap().to_string(),
-                user_type: user.get_str("type").unwrap().to_string(),
+				user_type: user.get_str("type").unwrap().to_string(),
+				taught_classes: None,
+                classes: user
+                    .get_array("classes")
+                    .unwrap()
+                    .to_vec()
+                    .into_iter()
+                    .map(|class| bson::from_bson::<Class>(class).unwrap())
+                    .collect(),
             })
         } else {
             Err(())
@@ -184,24 +194,40 @@ pub fn create_class(user: User, class_name: &str, class_type: ClassType) -> Resu
     }
 }
 
+//pub fn get_all_classes()
+
 pub fn class_add_student(user: User, class_name: &str, student_email: &str) -> Result<(), ()> {
-	if &user.user_type != "teacher" {
-		Err(())
-	} else {
-		let classes = get_database().collection("classes");
+    if &user.user_type != "teacher" {
+        Err(())
+    } else {
+        let classes = get_database().collection("classes");
+        let users = get_database().collection("users");
 
-		let filter = doc! {
-			"name": class_name,
-			"teacher": user.email,
-		};
-		let update = doc! {
-			"$push": { "students": student_email }
-		};
+        let filter = doc! {
+            "name": class_name,
+            "teacher": user.email,
+        };
 
-		match classes.find_one_and_update(filter, update, None) {
-			Ok(_) => Ok(()),
-			_ => Err(())
-		}
-	}
+        let user_filter = doc! {
+            "email": student_email,
+        };
+
+        let update = doc! {
+            "$push": { "students": student_email }
+        };
+
+        match classes.find_one_and_update(filter, update, None) {
+            Ok(class) => {
+				let class = class.unwrap();
+				let user_update = doc! {
+					"$push": { "classes": class.get_object_id("_id").unwrap() }
+				};
+				match users.find_one_and_update(user_filter, user_update, None) {
+					Ok(_) => Ok(()),
+					Err(_) => Err(()),
+				}
+			},
+            _ => Err(()),
+        }
+    }
 }
-
