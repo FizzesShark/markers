@@ -14,7 +14,7 @@ pub struct User {
     pub password: String,
     pub user_type: String,
     pub taught_classes: Option<Vec<Class>>,
-    pub classes: Vec<Class>,
+    pub classes: Vec<bson::oid::ObjectId>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -58,13 +58,16 @@ pub fn add_user(email: &str, password: &str, user_type: &str) -> Result<(), Acco
     if users.count_documents(user, None).unwrap() > 0 {
         Err(AccountError::DuplicateEmail)
     } else {
+		let new_user = User {
+			email: email.to_string(),
+			password: hash(password),
+			user_type: user_type.to_string(),
+			taught_classes: Some(Vec::new()),
+			classes: Vec::new(),
+		};
         users
             .insert_one(
-                doc! {
-                    "email": email,
-                    "password": hash(password),
-                    "type": user_type,
-                },
+            	bson::to_document(&new_user).unwrap(),
                 None,
             )
             .unwrap();
@@ -124,6 +127,7 @@ pub fn delete_session(sess_id: &str) {
         .unwrap();
 }
 
+//Error here: ObjectId of the class is stored in the user doc, but here it requires the entire class to be stored
 pub fn validate_login(id: &str) -> Result<User, ()> {
     let sessions = get_database().collection("sessions");
     let users = get_database().collection("users");
@@ -137,14 +141,14 @@ pub fn validate_login(id: &str) -> Result<User, ()> {
             Ok(User {
                 email: user.get_str("email").unwrap().to_string(),
                 password: user.get_str("password").unwrap().to_string(),
-				user_type: user.get_str("type").unwrap().to_string(),
+				user_type: user.get_str("user_type").unwrap().to_string(),
 				taught_classes: None,
                 classes: user
                     .get_array("classes")
                     .unwrap()
                     .to_vec()
                     .into_iter()
-                    .map(|class| bson::from_bson::<Class>(class).unwrap())
+                    .map(|class| bson::from_bson::<bson::oid::ObjectId>(class).unwrap())
                     .collect(),
             })
         } else {
@@ -193,8 +197,6 @@ pub fn create_class(user: User, class_name: &str, class_type: ClassType) -> Resu
         }
     }
 }
-
-//pub fn get_all_classes()
 
 pub fn class_add_student(user: User, class_name: &str, student_email: &str) -> Result<(), ()> {
     if &user.user_type != "teacher" {

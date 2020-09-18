@@ -99,6 +99,12 @@ fn test_loggedin(user: User) -> String {
     )
 }
 
+//user.class now contains ObjectIds; will need to make a db call
+#[get("/enrolled_classes")]
+fn get_enrolled_classes(user: User) -> Json<Vec<Class>> {
+	unimplemented!()
+}
+
 #[put("/new_class?<class_type>&<class_name>")]
 fn new_class(user: User, class_type: String, class_name: String) -> Result<Json<Class>, Status> {
     let c_type = match class_type.as_str() {
@@ -139,7 +145,8 @@ pub fn start_server() -> rocket::Rocket {
                 main,
                 test_loggedin,
                 register_new_user,
-                new_class,
+				new_class,
+				get_enrolled_classes,
                 add_student,
             ],
         )
