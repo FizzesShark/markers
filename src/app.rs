@@ -7,7 +7,7 @@ use rocket_contrib::templates::Template;
 
 use std::collections::HashMap;
 
-use crate::db::*;
+use crate::db::{*, login::*};
 
 #[derive(FromForm)]
 struct LoginAttempt {
